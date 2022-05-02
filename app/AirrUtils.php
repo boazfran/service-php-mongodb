@@ -649,11 +649,7 @@ class AirrUtils extends Model
         if ($optimized) {
             $optimized_string = 'Optimized ';
         }
-        $response['Info']['title'] = 'AIRR Data Commons API';
-        $response['Info']['description'] = $optimized_string . 'API response for ' . $type . ' query';
-        $response['Info']['version'] = 1.3;
-        $response['Info']['contact']['name'] = 'AIRR Community';
-        $response['Info']['contact']['url'] = 'https://github.com/airr-community';
+        $response['Info'] = Info::getAirrInfo();
 
         return $response;
     }
@@ -1145,7 +1141,7 @@ class AirrUtils extends Model
             // array of indexed fields - as usual, hard-coded terms are in 'service_name' column of the mapping file
             //  note that indexed fields on non-AIRR terms can and do exist
             $indexed_fields = ([$airr_names['repertoire_id'], $airr_names['data_processing_id'],
-                $airr_names['cell_id'], $airr_names['property'], $airr_names['value'],
+                $airr_names['cell_id'], $airr_names['property_id'], $airr_names['property'], $airr_names['value'],
             ]
             );
             $filters = '';
