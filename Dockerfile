@@ -6,10 +6,6 @@ EXPOSE 8443
 # switch to root user for installations
 USER root
 
-# add the apache user and user group
-RUN groupadd -g 1001 apache
-RUN useradd -u 1001 -g apache -s /bin/sh -m apache
-
 # enviornment variables
 ENV PHP_VERSION=7.3 
 
@@ -57,12 +53,7 @@ RUN sed -i s=logs/ssl_request_log=/tmp/logpipe=g /etc/httpd/conf.d/ssl.conf
 RUN sed -i s/443/8443/g /etc/httpd/conf.d/ssl.conf
 RUN rm /etc/httpd/conf.modules.d/01-cgi.conf
 COPY ./docker/httpd.conf /etc/httpd/conf/httpd.conf
-
-# create self signed certificate        
-RUN openssl req -newkey rsa:4096 -nodes -keyout /etc/pki/tls/private/localhost.key \
--x509 -days 3650 -out /etc/pki/tls/certs/localhost.crt \
--subj "/C=IL/ST=IL/L=TLV/O=CLALIT/OU=DAVIDOF/CN=localhost/emailAddress=boaz@domain"
-RUN chown -R 1001 /etc/pki/tls/
+RUN mkdir -p /etc/pki/tls/private/ /etc/pki/tls/certs
 
 # run the composer
 COPY . /var/www/html
@@ -85,12 +76,16 @@ RUN chmod 644 /var/www/html/config/AIRR-iReceptorMapping.txt
 # workaround for permission issue with /etc/httpd/run folder
 RUN rm -rf /etc/httpd/run
 RUN mkdir /etc/httpd/run
-RUN chown -R apache:apache /var/www/html/ && \
-    chown -R apache:apache /etc/httpd/
 
-# change to non-root user
-USER apache
+# set file permissions
+RUN chgrp -R 0 /etc/pki && chmod -R g=u /etc/pki
+RUN chgrp -R 0 /etc/httpd && chmod -R g=u /etc/httpd
+RUN chgrp -R 0 /var/www/html && chmod -R g=u /var/www/html
+
+# change to non-root user - just for cleaness, infact the openshift platform
+# will run the docker as an arbitrary user beloning to the root group
 WORKDIR /var/www/html
+USER 1001
 
 # run the apache server
-CMD sh ./docker/start_apache.sh
+CMD sh /var/www/html/docker/start_apache.sh
