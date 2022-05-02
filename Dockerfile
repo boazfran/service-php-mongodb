@@ -68,8 +68,11 @@ RUN chmod go-w /var/www/html && \
     cp .env.example .env && \
     php artisan key:generate
 
-# download mapping file
-ADD https://raw.githubusercontent.com/sfu-ireceptor/config/turnkey-v4/AIRR-iReceptorMapping.txt /var/www/html/config/
+# add mapping file
+RUN mkdir /config
+ADD https://raw.githubusercontent.com/sfu-ireceptor/config/master/AIRR-iReceptorMapping.txt /config/
+RUN ln -s /config/AIRR-iReceptorMapping.txt /var/www/html/config/AIRR-iReceptorMapping.txt
+
 RUN chmod 644 /var/www/html/config/AIRR-iReceptorMapping.txt
 
 # change config and html directory ownership
