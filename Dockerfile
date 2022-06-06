@@ -6,6 +6,9 @@ EXPOSE 8443
 # switch to root user for installations
 USER root
 
+# install updates
+RUN dnf check-update
+
 # enviornment variables
 ENV PHP_VERSION=7.3 
 
