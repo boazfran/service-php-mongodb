@@ -49,13 +49,20 @@ RUN pecl install mongodb && echo "extension=mongodb.so" > /etc/php.ini
 # Apache setup
 COPY ./docker/apache-vhost-https.conf /etc/httpd/conf.d/000-default.conf
 COPY ./docker/apache-vhost.conf /etc/httpd/conf.d/http.conf
+COPY ./docker/httpd.conf /etc/httpd/conf/httpd.conf
+ENV APACHE_DOCUMENT_ROOT /var/www/html/public
+RUN sed -i s=/var/www/html=${APACHE_DOCUMENT_ROOT}=g /etc/httpd/conf.d/*.conf
+RUN sed -i s=/var/www/html=${APACHE_DOCUMENT_ROOT}=g /etc/httpd/conf/httpd.conf
 RUN sed -i s=logs/ssl_error_log=/tmp/logpipe=g /etc/httpd/conf.d/ssl.conf
 RUN sed -i s=logs/ssl_access_log=/tmp/logpipe=g /etc/httpd/conf.d/ssl.conf
 RUN sed -i s=logs/ssl_request_log=/tmp/logpipe=g /etc/httpd/conf.d/ssl.conf
+
+# uncomment this line to debug the apache
+#RUN sed -i s=LogLevel\ notice=LogLevel\ debug=g /etc/httpd/conf/httpd.conf
+
 # change SSL port from 443 to 8443 so we can run apache as non-root
 RUN sed -i s/443/8443/g /etc/httpd/conf.d/ssl.conf
 RUN rm /etc/httpd/conf.modules.d/01-cgi.conf
-COPY ./docker/httpd.conf /etc/httpd/conf/httpd.conf
 RUN mkdir -p /etc/pki/tls/private/ /etc/pki/tls/certs
 
 # run the composer
@@ -82,8 +89,10 @@ RUN chmod 644 /var/www/html/config/AIRR-iReceptorMapping.txt
 # workaround for permission issue with /etc/httpd/run folder
 RUN rm -rf /etc/httpd/run
 RUN mkdir /etc/httpd/run
+RUN mkdir /run/php-fpm
 
 # set file permissions
+RUN chgrp -R 0 /run/php-fpm && chmod -R g=u /run/php-fpm
 RUN chgrp -R 0 /etc/pki && chmod -R g=u /etc/pki
 RUN chgrp -R 0 /etc/httpd && chmod -R g=u /etc/httpd
 RUN chgrp -R 0 /var/www/html && chmod -R g=u /var/www/html
