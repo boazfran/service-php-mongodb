@@ -57,6 +57,9 @@ RUN sed -i s=logs/ssl_error_log=/tmp/logpipe=g /etc/httpd/conf.d/ssl.conf
 RUN sed -i s=logs/ssl_access_log=/tmp/logpipe=g /etc/httpd/conf.d/ssl.conf
 RUN sed -i s=logs/ssl_request_log=/tmp/logpipe=g /etc/httpd/conf.d/ssl.conf
 
+# uncomment this line to debug the apache
+#RUN sed -i s=LogLevel\ notice=LogLevel\ debug=g /etc/httpd/conf/httpd.conf
+
 # change SSL port from 443 to 8443 so we can run apache as non-root
 RUN sed -i s/443/8443/g /etc/httpd/conf.d/ssl.conf
 RUN rm /etc/httpd/conf.modules.d/01-cgi.conf
@@ -79,19 +82,8 @@ RUN chmod go-w /var/www/html && \
 RUN mkdir /config
 ADD https://raw.githubusercontent.com/sfu-ireceptor/config/master/AIRR-iReceptorMapping.txt /config/
 RUN ln -s /config/AIRR-iReceptorMapping.txt /var/www/html/config/AIRR-iReceptorMapping.txt
+
 RUN chmod 644 /var/www/html/config/AIRR-iReceptorMapping.txt
-
-# fix .htaccess file syntax to match httpd mode
-RUN sed -i s=php_value\ max_input_vars\ 5000=\<IfModule\ mod_php7.c\>\\n\ \ \ \ php_value\ max_input_vars\ 5000\\n\</IfModule\>=g public/.htaccess
-
-# set mongodb server details
-ENV DB_HOST ireceptor-database
-ENV DB_DATABASE ireceptor
-ENV DB_SAMPLES_COLLECTION sample
-ENV DB_SEQUENCES_COLLECTION sequence
-ENV DB_CELL_COLLECTION cell
-RUN sed -i s=mydb=${DB_DATABASE}=g .env
-RUN sed -i s=127.0.0.1=${DB_HOST}=g .env
 
 # change config and html directory ownership
 # workaround for permission issue with /etc/httpd/run folder
