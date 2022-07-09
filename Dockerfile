@@ -49,10 +49,10 @@ RUN pecl install mongodb && echo "extension=mongodb.so" > /etc/php.ini
 # Apache setup
 COPY ./docker/apache-vhost-https.conf /etc/httpd/conf.d/000-default.conf
 COPY ./docker/apache-vhost.conf /etc/httpd/conf.d/http.conf
+COPY ./docker/docker-php.conf /etc/httpd/conf.d/docker-php.conf
 COPY ./docker/httpd.conf /etc/httpd/conf/httpd.conf
 ENV APACHE_DOCUMENT_ROOT /var/www/html/public
-RUN sed -i s=/var/www/html=${APACHE_DOCUMENT_ROOT}=g /etc/httpd/conf.d/*.conf
-RUN sed -i s=/var/www/html=${APACHE_DOCUMENT_ROOT}=g /etc/httpd/conf/httpd.conf
+RUN sed -i s=/var/www/html=${APACHE_DOCUMENT_ROOT}=g /etc/httpd/conf.d/*.conf /etc/httpd/conf/httpd.conf /etc/httpd/conf.d/docker-php.conf
 RUN sed -i s=logs/ssl_error_log=/tmp/logpipe=g /etc/httpd/conf.d/ssl.conf
 RUN sed -i s=logs/ssl_access_log=/tmp/logpipe=g /etc/httpd/conf.d/ssl.conf
 RUN sed -i s=logs/ssl_request_log=/tmp/logpipe=g /etc/httpd/conf.d/ssl.conf
@@ -83,7 +83,22 @@ RUN mkdir /config
 ADD https://raw.githubusercontent.com/sfu-ireceptor/config/master/AIRR-iReceptorMapping.txt /config/
 RUN ln -s /config/AIRR-iReceptorMapping.txt /var/www/html/config/AIRR-iReceptorMapping.txt
 
+# adjust mapping file permissions
 RUN chmod 644 /var/www/html/config/AIRR-iReceptorMapping.txt
+
+# fix .htaccess file syntax to match httpd mode
+RUN sed -i s=php_value\ max_input_vars\ 5000=\<IfModule\ mod_php7.c\>\\n\ \ \ \ php_value\ max_input_vars\ 5000\\n\</IfModule\>=g public/.htaccess
+
+# set envoirnment variables
+ENV DB_HOST=ireceptor-database \
+    DB_DATABASE=ireceptor \
+    DB_SAMPLES_COLLECTION=sample \
+    DB_SEQUENCES_COLLECTION=sequence \
+    DB_CELL_COLLECTION=cell
+
+# set parameters in .env
+RUN sed -i s=mydb=${DB_DATABASE}=g .env
+RUN sed -i s=127.0.0.1=${DB_HOST}=g .env
 
 # change config and html directory ownership
 # workaround for permission issue with /etc/httpd/run folder
